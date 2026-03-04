@@ -1,6 +1,6 @@
 import os
 import sqlite3
-from flask import Flask, g
+from flask import Flask, g, render_template
 
 app = Flask(__name__, instance_relative_config=True)
 
@@ -14,7 +14,7 @@ os.makedirs(app.instance_path, exist_ok=True)
 
 @app.route("/")
 def index():
-    return "FiftyTwo Pickup is running."
+    return render_template("index.html")
 
 
 if __name__ == "__main__":
