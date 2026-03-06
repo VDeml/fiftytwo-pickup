@@ -16,6 +16,5 @@ os.makedirs(app.instance_path, exist_ok=True)
 def index():
     return render_template("index.html")
 
-
 if __name__ == "__main__":
     app.run(debug=True)
