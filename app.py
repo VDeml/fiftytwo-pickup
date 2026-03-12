@@ -34,7 +34,17 @@ def init_db_command():
 
 @app.route("/")
 def index():
-    return render_template("index.html")
+        conn = sqlite3.connect(app.config["DATABASE"])
+        cursor = conn.cursor()
+
+        cursor.execute("SELECT * FROM users")
+        row = cursor.fetchall()
+
+
+        conn.commit()
+        conn.close()
+
+        return render_template("index.html", row = row)
 
 
 @app.route("/register", methods=["GET", "POST"])
@@ -53,7 +63,26 @@ def register():
         if not request.form.get("password") == request.form.get("confirmation"):
             return apology("Password and passwrod confirmation must match")
 
+        username = request.form.get("username")
+        email = request.form.get("email")
+        password_hash = generate_password_hash(request.form.get("password"), method='scrypt', salt_length=16)
 
+        # sets up a connection to the database
+        conn = sqlite3.connect(app.config["DATABASE"])
+        cursor = conn.cursor()
+        
+        # inserts a new row into the users table with newly registered users credentials
+        cursor.execute("INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)", (username, email, password_hash))
+
+        conn.commit()
+        conn.close()
+
+        
+
+        # And finally log user in
+        #session["user_id"] = #probably use a tuple instead of a list of dicts?
+
+        return redirect("/")
 
     else:
         return render_template("register.html")
