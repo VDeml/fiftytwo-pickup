@@ -2,18 +2,26 @@ import click
 import os
 import sqlite3
 
+from datetime import datetime
 from flask import Flask, g, render_template, request, redirect, session, current_app
+from flask_login import LoginManager
+from flask_sqlalchemy import SQLAlchemy
+from flask_wtf import FlaskForm
+
 from helpers import apology, login_required, usd
 from werkzeug.security import check_password_hash, generate_password_hash
-
+from wtforms import StringField, SubmitField
+from wtforms.validators import DataRequired
 
 
 
 app = Flask(__name__, instance_relative_config=True)
-
+# We probably don't want to store the key in plain sight, but for now this is fine
+app.config['SECRET_KEY'] = 'g?\xce\xf7\x1a#\x88+a N\x08\xf7\xce\xc1\x15B\n\xeb\xc3M\xe3\xcbm'
 # Tell Flask where database lives
 app.config["DATABASE"] = os.path.join(app.instance_path, "database.db")
-
+# Storing this somewhere in the code, per flask-login documentation, don't know why yet
+login_manager = LoginManager()
 
 # Ensure instance folder exists
 os.makedirs(app.instance_path, exist_ok=True)
@@ -31,23 +39,87 @@ def init_db_command():
     init_db()
     print("Database created.")
 
+# Create a "form" class
+class NamerForm(FlaskForm):
+    name = StringField("What's your name brother?", validators=[DataRequired()])
+    submit = SubmitField("Submit meeee")
+
 
 @app.route("/")
 def index():
         conn = sqlite3.connect(app.config["DATABASE"])
         cursor = conn.cursor()
 
-        cursor.execute("SELECT * FROM users")
+        cursor.execute("SELECT * FROM users WHERE id = ?", (session["user_id"],))
         row = cursor.fetchone()
-        cursor.execute("SELECT username, email FROM users")
+        cursor.execute("SELECT * FROM users")
         rows = cursor.fetchall()
         
 
         conn.commit()
         conn.close()
 
-        return render_template("index.html", rows = rows, row = row)
+        return render_template("index.html", rows = rows, row = row, user = row[1])
 
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    """Log user in"""
+    # Forget any user_id
+    # User reached route via POST (as by submitting a form via POST)
+    if request.method == "POST":
+        # Ensure username was submitted
+        if not request.form.get("username"):
+            return apology("must provide username", 403)
+
+        # Ensure password was submitted
+        elif not request.form.get("password"):
+            return apology("must provide password", 403)
+
+        # Query database for username
+        conn = sqlite3.connect(app.config["DATABASE"])
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM users WHERE username = ?", (request.form.get("username"),))
+        rows = cursor.fetchone()
+        # Ensure username exists and password is correct
+        if rows is None or not check_password_hash(
+            rows[3], request.form.get("password")
+        ):
+            conn.close()
+            return apology("invalid username and/or password", 403)
+
+        # Remember which user has logged in
+        session["user_id"] = rows[0]
+        conn.close()
+        # Redirect user to home page
+        return redirect("/")
+
+    # User reached route via GET (as by clicking a link or via redirect)
+    else:
+        return render_template("login.html")
+
+
+@app.route("/logout")
+def logout():
+    """Log user out"""
+    # Forget any user_id
+    session.clear()
+    # Redirect user to login form
+    return redirect("/")
+
+
+@app.route('/name', methods=['GET', 'POST'])
+def name():
+	name = None
+	form = NamerForm()
+	# Validate Form
+	if form.validate_on_submit():
+		name = form.name.data
+		form.name.data = ''
+		
+	return render_template("name.html", 
+		name = name,
+		form = form)
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
@@ -70,11 +142,11 @@ def register():
         email = request.form.get("email")
         conn = sqlite3.connect(app.config["DATABASE"])
         cursor = conn.cursor()
-        cursor.execute("SELECT username FROM users WHERE username = ?", (username, ))
+        cursor.execute("SELECT username FROM users WHERE username = ?", (username,))
         username_check = cursor.fetchall()
         if len(username_check) != 0:
             return apology("Username taken", 400)
-        cursor.execute("SELECT email FROM users WHERE email = ?", (email, ))
+        cursor.execute("SELECT email FROM users WHERE email = ?", (email,))
         email_check = cursor.fetchall()
         if len(email_check) != 0:
             return apology("Email taken", 400)
@@ -83,13 +155,13 @@ def register():
         # inserts a new row into the users table with newly registered users credentials
         cursor.execute("INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)", (username, email, password_hash))
 
+        cursor.execute("SELECT * FROM users WHERE username = ?", (username,)) 
+        user_login = cursor.fetchone()
+        session["user_id"] = user_login[0]
+
+
         conn.commit()
         conn.close()
-
-        
-
-        # And finally log user in
-        #session["user_id"] = #probably use a tuple instead of a list of dicts?
 
         return redirect("/")
 
