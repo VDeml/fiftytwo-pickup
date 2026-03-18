@@ -1,6 +1,8 @@
 import click
 import os
+import random
 import sqlite3
+
 
 from datetime import datetime
 from flask import Flask, g, render_template, request, redirect, session, current_app
@@ -46,20 +48,21 @@ class NamerForm(FlaskForm):
 
 
 @app.route("/")
+@login_required
 def index():
         conn = sqlite3.connect(app.config["DATABASE"])
         cursor = conn.cursor()
 
-        cursor.execute("SELECT * FROM users WHERE id = ?", (session["user_id"],))
+        cursor.execute("SELECT * FROM users WHERE id = ?",(session["user_id"],))
         row = cursor.fetchone()
-        cursor.execute("SELECT * FROM users")
-        rows = cursor.fetchall()
-        
+        if row is None:
+            return apology("User not found", 403)
+
 
         conn.commit()
         conn.close()
 
-        return render_template("index.html", rows = rows, row = row, user = row[1])
+        return render_template("index.html", user = row[1])
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -109,6 +112,7 @@ def logout():
 
 
 @app.route('/name', methods=['GET', 'POST'])
+@login_required
 def name():
 	name = None
 	form = NamerForm()
@@ -120,6 +124,20 @@ def name():
 	return render_template("name.html", 
 		name = name,
 		form = form)
+
+@app.route("/play", methods=["GET", "POST"])
+@login_required
+def play():
+    """Shuffle a deck of cards, view it, then turn it over and type back the correct order of the cards"""
+    if request.method == "POST":
+        # once player pushes the button, generate deck and shuffle it
+        values = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A']
+        suits = ['H', 'S', 'C', 'D']
+        deck = [value + suit for suit in suits for value in values]
+        random.shuffle(deck)
+        return render_template("play.html", deck=deck)
+    else:
+        return render_template("play.html")
 
 @app.route("/register", methods=["GET", "POST"])
 def register():

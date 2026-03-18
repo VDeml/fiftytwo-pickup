@@ -1,0 +1,30 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Play
+{% endblock %}
+
+{% block main %}
+
+{% if deck %}
+    <form action="/play" method="post">
+        <button class="btn btn-secondary" id="Shuffle_deck" type="submit">Shuffle deck</button>
+    </form>
+    <div>
+    {% for card in deck %}
+        {{ card }}
+    {% endfor %}
+    </div>
+    <div>
+        <form action="/play" method="post">
+        <button class="btn btn-secondary" id="Hide_deck" type="submit">Hide deck</button>
+        </form>
+    </div>
+{% else %}
+    <form action="/play" method="post">
+        <button class="btn btn-secondary" type="submit">PLAY</button>
+    </form>
+
+{% endif %}
+
+{% endblock %}
