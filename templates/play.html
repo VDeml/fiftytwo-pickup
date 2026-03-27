@@ -5,26 +5,34 @@
 {% endblock %}
 
 {% block main %}
-
 {% if deck %}
     <form action="/play" method="post">
-        <button class="btn btn-secondary" id="Shuffle_deck" type="submit">Shuffle deck</button>
+        <button class="btn btn-secondary" id="shuffleDeck" type="submit">Shuffle deck</button>
     </form>
-    <div>
+    <div id="deck">
     {% for card in deck %}
         {{ card }}
     {% endfor %}
     </div>
     <div>
-        <form action="/play" method="post">
-        <button class="btn btn-secondary" id="Hide_deck" type="submit">Hide deck</button>
-        </form>
+        <button class="btn btn-outline-secondary" id="hideDeck" type="button">Hide deck</button>
     </div>
 {% else %}
     <form action="/play" method="post">
-        <button class="btn btn-secondary" type="submit">PLAY</button>
+        <button class="btn btn-dark" type="submit">PLAY</button>
     </form>
-
 {% endif %}
+
+<section id="playForm">
+    <h2>Enter cards in order shown</h2>
+    <form action="/play" method="post">
+    {% for i in range(52) %}
+    <input name="card{{ i }}" placeholder="Card {{ i + 1 }}" type="text">
+    {% endfor %}
+    <br>
+    <button class="btn btn-outline-primary" type="submit">Submit result</button>
+    </form>
+</section>
+<script src="../static/js/play.js"></script>
 
 {% endblock %}
