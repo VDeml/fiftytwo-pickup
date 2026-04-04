@@ -1,11 +1,9 @@
 import click
 import os
 import random
-import sqlite3
-
 
 from datetime import datetime
-from flask import Flask, g, render_template, request, redirect, session, current_app
+from flask import Flask, flash, g, render_template, request, redirect, session, current_app
 from flask_login import LoginManager
 from flask_sqlalchemy import SQLAlchemy
 from flask_wtf import FlaskForm
@@ -21,25 +19,27 @@ app = Flask(__name__, instance_relative_config=True)
 # We probably don't want to store the key in plain sight, but for now this is fine
 app.config['SECRET_KEY'] = 'g?\xce\xf7\x1a#\x88+a N\x08\xf7\xce\xc1\x15B\n\xeb\xc3M\xe3\xcbm'
 # Tell Flask where database lives
-app.config["DATABASE"] = os.path.join(app.instance_path, "database.db")
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///" + os.path.join(app.instance_path, "database.db")
+# And initialize the database
+db = SQLAlchemy(app)
 # Storing this somewhere in the code, per flask-login documentation, don't know why yet
 login_manager = LoginManager()
 
+# Create model for my SQLAlchemy
+class User(db.Model):
+    __tablename__ = "users"
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String, nullable=False, unique=True)
+    email = db.Column(db.String, nullable=False, unique=True)
+    password_hash = db.Column(db.String, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Create a string... supposed to be useful for debugging? It's a standard
+    def __repr__(self):
+        return '<Name %r>' % self.username
+
 # Ensure instance folder exists
 os.makedirs(app.instance_path, exist_ok=True)
-
-"""Adding a function to run Schema.sql"""
-def init_db():
-    with sqlite3.connect(app.config["DATABASE"]) as db:
-        with open("schema.sql") as f:
-            db.executescript(f.read())
-
-# Initialize database with command-line interface
-@app.cli.command("init-db")
-def init_db_command():
-    """ Create database tables """
-    init_db()
-    print("Database created.")
 
 # Create a "form" class
 class NamerForm(FlaskForm):
@@ -50,19 +50,11 @@ class NamerForm(FlaskForm):
 @app.route("/")
 @login_required
 def index():
-        conn = sqlite3.connect(app.config["DATABASE"])
-        cursor = conn.cursor()
-
-        cursor.execute("SELECT * FROM users WHERE id = ?",(session["user_id"],))
-        row = cursor.fetchone()
-        if row is None:
-            return apology("User not found", 403)
-
-
-        conn.commit()
-        conn.close()
-
-        return render_template("index.html", user = row[1])
+    user = User.query.filter_by(id=session["user_id"]).first()
+    if not user:
+        return apology("User not found", 403)
+    
+    return render_template("index.html", user = user)
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -79,24 +71,13 @@ def login():
         elif not request.form.get("password"):
             return apology("must provide password", 403)
 
-        # Query database for username
-        conn = sqlite3.connect(app.config["DATABASE"])
-        cursor = conn.cursor()
-        cursor.execute("SELECT * FROM users WHERE username = ?", (request.form.get("username"),))
-        rows = cursor.fetchone()
-        # Ensure username exists and password is correct
-        if rows is None or not check_password_hash(
-            rows[3], request.form.get("password")
-        ):
-            conn.close()
+        #Checking for correct username, password, logging user in
+        user = User.query.filter_by(username=request.form.get("username")).first()
+        if not user or not check_password_hash(user.password_hash, request.form.get("password")):
             return apology("invalid username and/or password", 403)
-
-        # Remember which user has logged in
-        session["user_id"] = rows[0]
-        conn.close()
+        session["user_id"] = user.id
         # Redirect user to home page
         return redirect("/")
-
     # User reached route via GET (as by clicking a link or via redirect)
     else:
         return render_template("login.html")
@@ -130,12 +111,27 @@ def name():
 def play():
     """Shuffle a deck of cards, view it, then turn it over and type back the correct order of the cards"""
     if request.method == "POST":
-        # once player pushes the button, generate deck and shuffle it
-        values = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A']
-        suits = ['H', 'S', 'C', 'D']
-        deck = [value + suit for suit in suits for value in values]
-        random.shuffle(deck)
-        return render_template("play.html", deck=deck)
+        action = request.form.get("action")
+
+        if action == "shuffle":
+            # once player pushes the button, generate deck and shuffle it
+            values = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A']
+            suits = ['H', 'S', 'C', 'D']
+            deck = [value + suit for suit in suits for value in values]
+            random.shuffle(deck)
+            session["deck"] = deck
+            return render_template("play.html", deck=session["deck"])
+        
+        elif action == "submit":
+            submitted_cards = []
+            for i in range(52):
+                submitted_cards.append(request.form.get(f"card{i}"))
+            deck = session.get("deck")
+            if deck == submitted_cards:
+                return apology("WELL DONE")
+            else:
+                return apology ("WRONG")
+
     else:
         return render_template("play.html")
 
@@ -153,43 +149,30 @@ def register():
             return apology("must provide password connfirmation")
         
         if not request.form.get("password") == request.form.get("confirmation"):
-            return apology("Password and passwrod confirmation must match")
+            return apology("Password and password confirmation must match")
         
-        # ensure username and email are unique
+        #NEW WAY using SQLAlchemy
         username = request.form.get("username")
         email = request.form.get("email")
-        conn = sqlite3.connect(app.config["DATABASE"])
-        cursor = conn.cursor()
-        cursor.execute("SELECT username FROM users WHERE username = ?", (username,))
-        username_check = cursor.fetchall()
-        if len(username_check) != 0:
+        username_check = User.query.filter_by(username=username).first()
+        email_check = User.query.filter_by(email=email).first()
+        if username_check is not None:
             return apology("Username taken", 400)
-        cursor.execute("SELECT email FROM users WHERE email = ?", (email,))
-        email_check = cursor.fetchall()
-        if len(email_check) != 0:
+        if email_check is not None:
             return apology("Email taken", 400)
         password_hash = generate_password_hash(request.form.get("password"), method='scrypt', salt_length=16)
-       
-        # inserts a new row into the users table with newly registered users credentials
-        cursor.execute("INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)", (username, email, password_hash))
-
-        cursor.execute("SELECT * FROM users WHERE username = ?", (username,)) 
-        user_login = cursor.fetchone()
-        session["user_id"] = user_login[0]
+        user = User(username=username, email=email, password_hash=password_hash)
+        db.session.add(user)
+        db.session.commit()
+        session["user_id"] = user.id
+        flash("You did it!")
 
 
-        conn.commit()
-        conn.close()
 
         return redirect("/")
 
     else:
         return render_template("register.html")
-
-
-@app.route("/test")
-def test():
-    return render_template("test.html")
 
 if __name__ == "__main__":
     app.run(debug=True)
