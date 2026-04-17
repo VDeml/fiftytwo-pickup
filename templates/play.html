@@ -5,6 +5,12 @@
 {% endblock %}
 
 {% block main %}
+    <h2 id ="stopwatch">Stopwatch</h2>
+    <div id="container">
+        <div id="display">
+            00:00:00:00
+        </div>
+    </div>
 {% if deck %}
     <form action="/play" method="post">
         <input type="hidden" name="action" value="shuffle"> 
@@ -21,21 +27,21 @@
 {% else %}
     <form action="/play" method="post">
          <input type="hidden" name="action" value="shuffle">
-        <button class="btn btn-dark" type="submit">PLAY</button>
+        <button class="btn btn-dark" id="playButton" type="submit">PLAY</button>
     </form>
 {% endif %}
 
-<section id="playForm">
+<section id="playForm" style="visibility: hidden;">
     <h2>Enter cards in order shown</h2>
     <form action="/play" method="post">
         <input type="hidden" name="action" value="submit">
-        {% for i in range(52) %}
+        {% for i in range(4) %}
             <input name="card{{ i }}" placeholder="Card {{ i + 1 }}" type="text" minlength="2" maxlength="3">
         {% endfor %}
     <br>
     <button class="btn btn-outline-primary" type="submit">Submit result</button>
     </form>
 </section>
-<script src="../static/js/play.js"></script>
+<script src="{{url_for('static', filename='js/play.js') }}"></script>
 
 {% endblock %}

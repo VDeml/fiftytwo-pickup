@@ -1,0 +1,31 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    History
+{% endblock %}
+
+{% block main %}
+    <h3> Hello, {{ user.username }} here are your past results</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>deck_order</th>
+                    <th>recall_order</th>
+                    <th>duration_seconds</th>
+                    <th>created_at</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for attempt in attempts %}
+                <tr>
+                    <td>{{ attempt.id }}</td>
+                    <td>{{ attempt.deck_order | fromjson }}</td>
+                    <td>{{ attempt.recall_order | fromjson }}</td>
+                    <td>{{ attempt.duration_seconds }}</td>
+                    <td>{{ attempt.created_at }}</td>
+                </tr>
+                {% endfor%}
+            </tbody>
+        </table>
+{% endblock %}

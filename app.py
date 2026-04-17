@@ -1,6 +1,8 @@
 import click
+import json
 import os
 import random
+import time 
 
 from datetime import datetime
 from flask import Flask, flash, g, render_template, request, redirect, session, current_app
@@ -9,6 +11,9 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_wtf import FlaskForm
 
 from helpers import apology, login_required, usd
+from sqlalchemy import ForeignKey, Text, Float, DateTime
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.sql import func
 from werkzeug.security import check_password_hash, generate_password_hash
 from wtforms import StringField, SubmitField
 from wtforms.validators import DataRequired
@@ -33,10 +38,25 @@ class User(db.Model):
     email = db.Column(db.String, nullable=False, unique=True)
     password_hash = db.Column(db.String, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    # Relationship to attempts table
+    attempts: Mapped[list["Attempt"]] = relationship(back_populates="user", cascade="all, delete-orphan")
 
     # Create a string... supposed to be useful for debugging? It's a standard
     def __repr__(self):
         return '<Name %r>' % self.username
+
+class Attempt(db.Model):
+    __tablename__="attempts"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    deck_order: Mapped[str] = mapped_column(Text, nullable=False)
+    recall_order: Mapped[str | None] = mapped_column(Text, nullable=True)
+    accuracy: Mapped[float | None] = mapped_column(Float, nullable=True)
+    duration_seconds: Mapped[float | None] = mapped_column(Float, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    # Relationship to users table
+    user: Mapped["User"] = relationship(back_populates="attempts")
 
 # Ensure instance folder exists
 os.makedirs(app.instance_path, exist_ok=True)
@@ -46,6 +66,10 @@ class NamerForm(FlaskForm):
     name = StringField("What's your name brother?", validators=[DataRequired()])
     submit = SubmitField("Submit meeee")
 
+# creating a custom Jinja filter to be ablte to decode JSON in history.html
+@app.template_filter("fromjson")
+def fromjson_filter(value):
+    return json.loads(value) if value else []
 
 @app.route("/")
 @login_required
@@ -55,6 +79,15 @@ def index():
         return apology("User not found", 403)
     
     return render_template("index.html", user = user)
+
+@app.route("/history", methods=["GET", "POST"])
+@login_required
+def history():
+    user = User.query.filter_by(id=session["user_id"]).first()
+    attempts = Attempt.query.filter_by(user_id=session["user_id"]).all()
+    if not attempts:
+        return apology("No history of games played")
+    return render_template("history.html", user = user, attempts = attempts)
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -115,22 +148,42 @@ def play():
 
         if action == "shuffle":
             # once player pushes the button, generate deck and shuffle it
-            values = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A']
-            suits = ['H', 'S', 'C', 'D']
+            ## For now this is way too long of a list, for testing we dont need the entire deck of 52
+            # values = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A']
+            # suits = ['H', 'S', 'C', 'D']
+            # deck = [value + suit for suit in suits for value in values]
+            # random.shuffle(deck)
+            ## For now lets use only 2 values King, Ace and 2 colors Hearts, Spades
+            values = ['K', 'A']
+            suits = ['H', 'S']
             deck = [value + suit for suit in suits for value in values]
             random.shuffle(deck)
             session["deck"] = deck
-            return render_template("play.html", deck=session["deck"])
+            session["start_time"] = time.time()
+            return render_template("play.html", deck=deck, start_time=session.get("start_time"))
         
         elif action == "submit":
             submitted_cards = []
-            for i in range(52):
+            for i in range(4):
                 submitted_cards.append(request.form.get(f"card{i}"))
             deck = session.get("deck")
+            start_time = session.get("start_time")
+            if start_time:
+                duration = time.time() - start_time
+            else:
+                duration = None
+            # Next input the attempt into the database
+            game = Attempt(user_id=session["user_id"],
+                            deck_order=json.dumps(deck), 
+                            recall_order=json.dumps(submitted_cards),
+                            duration_seconds=duration)
+            db.session.add(game)
+            db.session.commit()
             if deck == submitted_cards:
                 return apology("WELL DONE")
             else:
                 return apology ("WRONG")
+            
 
     else:
         return render_template("play.html")
