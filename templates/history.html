@@ -9,11 +9,12 @@
         <table>
             <thead>
                 <tr>
-                    <th>ID</th>
-                    <th>deck_order</th>
-                    <th>recall_order</th>
-                    <th>duration_seconds</th>
-                    <th>created_at</th>
+                    <th>Attempt number</th>
+                    <th>Shuffled deck</th>
+                    <th>Order recorded</th>
+                    <th>Completed in (seconds)</th>
+                    <th>Date of attempt</th>
+                    <th>Accuracy</th>
                 </tr>
             </thead>
             <tbody>
@@ -24,6 +25,7 @@
                     <td>{{ attempt.recall_order | fromjson }}</td>
                     <td>{{ attempt.duration_seconds }}</td>
                     <td>{{ attempt.created_at }}</td>
+                    <td>{{ attempt.accuracy }}</td>
                 </tr>
                 {% endfor%}
             </tbody>

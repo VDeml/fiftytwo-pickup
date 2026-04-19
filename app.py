@@ -5,7 +5,7 @@ import random
 import time 
 
 from datetime import datetime
-from flask import Flask, flash, g, render_template, request, redirect, session, current_app
+from flask import Flask, flash, g, render_template, request, redirect, session, current_app, jsonify
 from flask_login import LoginManager
 from flask_sqlalchemy import SQLAlchemy
 from flask_wtf import FlaskForm
@@ -163,27 +163,41 @@ def play():
             return render_template("play.html", deck=deck, start_time=session.get("start_time"))
         
         elif action == "submit":
-            submitted_cards = []
-            for i in range(4):
-                submitted_cards.append(request.form.get(f"card{i}"))
+            data = request.get_json() # get the JSON from JavaScript
+            submitted_cards = data.get("cards")
             deck = session.get("deck")
             start_time = session.get("start_time")
             if start_time:
                 duration = time.time() - start_time
             else:
                 duration = None
+            # Calculate the accuracy of players attempt
+            correct_count = 0
+            for i, card in enumerate(deck):
+                if i < len(submitted_cards) and submitted_cards[i] == card:
+                    correct_count += 1
+            
+            accuracy = (correct_count / len(deck)) * 100 if deck else 0
+
             # Next input the attempt into the database
             game = Attempt(user_id=session["user_id"],
-                            deck_order=json.dumps(deck), 
-                            recall_order=json.dumps(submitted_cards),
-                            duration_seconds=duration)
+                             deck_order=json.dumps(deck), 
+                             recall_order=json.dumps(submitted_cards),
+                             accuracy=accuracy,
+                             duration_seconds=duration)
             db.session.add(game)
             db.session.commit()
-            if deck == submitted_cards:
-                return apology("WELL DONE")
-            else:
-                return apology ("WRONG")
-            
+            # Return result as JSON
+            return jsonify({
+                "accuracy": round(accuracy, 2),
+                "correct": correct_count,
+                "total": len(deck),
+                "message": "WELL DONE" if deck == submitted_cards else "WRONG"
+            })
+        #     if deck == submitted_cards:
+        #         return apology("WELL DONE")
+        #     else:
+        #         return apology ("WRONG")
 
     else:
         return render_template("play.html")
