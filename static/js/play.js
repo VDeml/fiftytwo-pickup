@@ -80,30 +80,50 @@ function update() {
         `${String(milliseconds).padStart(2, "0")}`;
 }
 
-// Implementing accuracy functionality
-document.addEventListener('DOMContentLoaded', function() {
-    const form = document.querySelector('#playForm form');
-    form.addEventListener('submit', function(e) {
-        e.preventDefault(); // Prevents normal form submission. 
-        // Not sure why this is needed, but seen multiple times
+// Handle submit form with AJAX
+if (resultForm) {
+    resultForm.addEventListener("submit", async (event) => {
+        event.preventDefault();  // Prevent default form submission
+
+        // Collect card inputs into an array
         const cards = [];
-        // Run a loop through all submitted cards, add them all to the array
-        for (let i = 0; i < 4; i++) {
-            const card = document.querySelector(`input[name="card${i}"]`).value;
-            cards.push(card);
+        for (let i = 0; i < 4; i++) {  // Assuming 4 cards
+            const input = document.querySelector(`input[name="card${i}"]`);
+            if (input && input.value.trim()) {
+                cards.push(input.value.trim().toUpperCase());  // Normalize
+            }
         }
-        // Sedn cards to app.py using "fetch"
-        fetch('/play', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                action: 'submit',
-                cards: cards
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
-            alert(`Accuracy is: ${data.accuracy}%`) 
-        });  
+
+        if (cards.length !== 4) {
+            alert("Please enter all 4 cards.");
+            return;
+        }
+
+        try {
+            // Send AJAX request
+            const response = await fetch("/play", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    action: "submit",
+                    cards: cards,
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error("Submission failed");
+            }
+
+            const data = await response.json();
+
+            // Redirect to history page after successful submission
+            window.location.href = "/history";
+
+        } catch (error) {
+            console.error("Error:", error);
+            alert("An error occurred. Please try again.");
+        }
     });
-});
+}
