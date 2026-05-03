@@ -144,7 +144,8 @@ def name():
 def play():
     """Shuffle a deck of cards, view it, then turn it over and type back the correct order of the cards"""
     if request.method == "POST":
-        action = request.form.get("action")
+        data = request.get_json(silent=True) or {}
+        action = request.form.get("action") or data.get("action")
 
         if action == "shuffle":
             # once player pushes the button, generate deck and shuffle it
@@ -163,8 +164,8 @@ def play():
             return render_template("play.html", deck=deck, start_time=session.get("start_time"))
         
         elif action == "submit":
-            data = request.get_json() # get the JSON from JavaScript
-            submitted_cards = data.get("cards")
+            data = request.get_json(silent=True) or {}
+            submitted_cards = data.get("cards", [])
             deck = session.get("deck")
             start_time = session.get("start_time")
             if start_time:
@@ -173,7 +174,7 @@ def play():
                 duration = None
             # Calculate the accuracy of players attempt
             correct_count = 0
-            for i, card in enumerate(deck):
+            for i, card in enumerate(deck or []):
                 if i < len(submitted_cards) and submitted_cards[i] == card:
                     correct_count += 1
             
@@ -187,17 +188,21 @@ def play():
                              duration_seconds=duration)
             db.session.add(game)
             db.session.commit()
-            # Return result as JSON
+
+            message = "WELL DONE" if deck == submitted_cards else "WRONG"
+            flash(
+                f"{message} — Accuracy: {round(accuracy, 2)}%, "
+                f"Correct: {correct_count}/{len(deck) if deck else 0}."
+            )
+
             return jsonify({
                 "accuracy": round(accuracy, 2),
                 "correct": correct_count,
-                "total": len(deck),
-                "message": "WELL DONE" if deck == submitted_cards else "WRONG"
+                "total": len(deck) if deck else 0,
+                "message": message
             })
-        #     if deck == submitted_cards:
-        #         return apology("WELL DONE")
-        #     else:
-        #         return apology ("WRONG")
+        else:
+            return jsonify({"error": "Invalid action"}), 400
 
     else:
         return render_template("play.html")

@@ -23,7 +23,7 @@
                     <td>{{ attempt.id }}</td>
                     <td>{{ attempt.deck_order | fromjson }}</td>
                     <td>{{ attempt.recall_order | fromjson }}</td>
-                    <td>{{ attempt.duration_seconds }}</td>
+                    <td>{{ "%.2f"|format(attempt.duration_seconds) }}</td>
                     <td>{{ attempt.created_at }}</td>
                     <td>{{ attempt.accuracy }}</td>
                 </tr>

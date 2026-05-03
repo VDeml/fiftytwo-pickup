@@ -5,5 +5,5 @@ FiftyTwo Pickup is a web application that lets you practice memorizing a shuffle
 ## Features
 
 - Simple web interface to practice card memorization.
-- Tracks each user’s attempts and performance (to be implemented).
+- Tracks each user’s attempts and performance.
 - Stores data securely in a SQLite database located in the `instance/` folder.
