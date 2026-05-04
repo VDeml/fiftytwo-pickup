@@ -22,8 +22,7 @@ app.config['SECRET_KEY'] = 'g?\xce\xf7\x1a#\x88+a N\x08\xf7\xce\xc1\x15B\n\xeb\x
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///" + os.path.join(app.instance_path, "database.db")
 # And initialize the database
 db = SQLAlchemy(app)
-# Storing this somewhere in the code, per flask-login documentation, don't know why yet
-login_manager = LoginManager()
+
 
 # Create model for my SQLAlchemy
 class User(db.Model):
