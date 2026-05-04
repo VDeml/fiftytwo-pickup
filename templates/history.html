@@ -14,7 +14,7 @@
                     <th scope="col">Order recorded</th>
                     <th scope="col">Completed in (seconds)</th>
                     <th scope="col">Date of attempt</th>
-                    <th scope="col">Accuracy</th>
+                    <th scope="col">Accuracy %</th>
                 </tr>
             </thead>
             <tbody>
@@ -25,7 +25,7 @@
                     <td>{{ attempt.recall_order | fromjson }}</td>
                     <td>{{ "%.2f"|format(attempt.duration_seconds) }}</td>
                     <td>{{ attempt.created_at }}</td>
-                    <td>{{ attempt.accuracy }}</td>
+                    <td>{{ "%.2f"|format(attempt.accuracy) }}</td>
                 </tr>
                 {% endfor%}
             </tbody>

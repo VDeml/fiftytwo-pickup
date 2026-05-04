@@ -94,11 +94,6 @@ if (resultForm) {
             }
         }
 
-        if (cards.length !== 52) {
-            alert("Please enter all 52 cards.");
-            return;
-        }
-
         try {
             // Send AJAX request
             const response = await fetch("/play", {
