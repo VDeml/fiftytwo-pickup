@@ -87,15 +87,15 @@ if (resultForm) {
 
         // Collect card inputs into an array
         const cards = [];
-        for (let i = 0; i < 4; i++) {  // Assuming 4 cards
+        for (let i = 0; i < 52; i++) {  // Assuming 52 cards
             const input = document.querySelector(`input[name="card${i}"]`);
             if (input && input.value.trim()) {
                 cards.push(input.value.trim().toUpperCase());  // Normalize
             }
         }
 
-        if (cards.length !== 4) {
-            alert("Please enter all 4 cards.");
+        if (cards.length !== 52) {
+            alert("Please enter all 52 cards.");
             return;
         }
 

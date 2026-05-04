@@ -6,26 +6,26 @@
 
 {% block main %}
     <h2 id ="stopwatch">Stopwatch</h2>
-    <div id="container">
+    <div id="container" class="border p-3 mb-3">
         <div id="display">
             00:00:00:00
         </div>
     </div>
 {% if deck %}
-    <form action="/play" method="post">
+    <form action="/play" method="post" class="mb-3">
         <input type="hidden" name="action" value="shuffle"> 
         <button class="btn btn-secondary" id="shuffleDeck" type="submit">Shuffle deck</button>
     </form>
-    <div id="deck">
+    <div id="deck" class="mb-3">
     {% for card in deck %}
-        {{ card }}
+        <span class="me-2">{{ card }}</span>
     {% endfor %}
     </div>
-    <div>
-        <button class="btn btn-outline-secondary" id="hideDeck" type="button">Hide deck</button>
+    <div class="mb-3">
+        <button class="btn btn-outline-secondary" id="hideDeck" type="submit">Hide deck</button>
     </div>
 {% else %}
-    <form action="/play" method="post">
+    <form action="/play" method="post" class="mb-3">
          <input type="hidden" name="action" value="shuffle">
         <button class="btn btn-dark" id="playButton" type="submit">PLAY</button>
     </form>
@@ -35,14 +35,14 @@
     <h2>Enter cards in order shown</h2>
     <form action="/play" method="post">
         <input type="hidden" name="action" value="submit">
-        {% for i in range(4) %}
-            <input name="card{{ i }}" placeholder="Card {{ i + 1 }}" type="text" minlength="2" maxlength="3">
+        {% for i in range(52) %}
+            <input name="card{{ i }}" placeholder="Card {{ i + 1 }}" type="text" minlength="2" maxlength="3" class="me-2 mb-2">
         {% endfor %}
     <br>
-    <button class="btn btn-outline-primary" type="submit">Submit result</button>
+    <button class="btn btn-outline-primary mt-3" type="submit">Submit result</button>
     </form>
 </section>
-<div id="result" style="display: none; margin-top: 20px; padding: 10px; border: 1px solid #ccc;"></div>
+<div id="result" style="display: none; margin-top: 20px; padding: 10px; border: 1px solid lch(97.93% 0.01 296.81);"></div>
 <script src="{{url_for('static', filename='js/play.js') }}"></script>
 
 {% endblock %}

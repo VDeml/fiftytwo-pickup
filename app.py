@@ -1,22 +1,17 @@
-import click
 import json
 import os
 import random
 import time 
 
 from datetime import datetime
-from flask import Flask, flash, g, render_template, request, redirect, session, current_app, jsonify
-from flask_login import LoginManager
+from flask import Flask, flash, render_template, request, redirect, session, jsonify
 from flask_sqlalchemy import SQLAlchemy
-from flask_wtf import FlaskForm
 
-from helpers import apology, login_required, usd
+from helpers import apology, login_required
 from sqlalchemy import ForeignKey, Text, Float, DateTime
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 from werkzeug.security import check_password_hash, generate_password_hash
-from wtforms import StringField, SubmitField
-from wtforms.validators import DataRequired
 
 
 
@@ -61,11 +56,6 @@ class Attempt(db.Model):
 # Ensure instance folder exists
 os.makedirs(app.instance_path, exist_ok=True)
 
-# Create a "form" class
-class NamerForm(FlaskForm):
-    name = StringField("What's your name brother?", validators=[DataRequired()])
-    submit = SubmitField("Submit meeee")
-
 # creating a custom Jinja filter to be ablte to decode JSON in history.html
 @app.template_filter("fromjson")
 def fromjson_filter(value):
@@ -86,7 +76,7 @@ def history():
     user = User.query.filter_by(id=session["user_id"]).first()
     attempts = Attempt.query.filter_by(user_id=session["user_id"]).all()
     if not attempts:
-        return apology("No history of games played")
+        flash("No attempts recorded", "danger")
     return render_template("history.html", user = user, attempts = attempts)
 
 
@@ -98,11 +88,11 @@ def login():
     if request.method == "POST":
         # Ensure username was submitted
         if not request.form.get("username"):
-            return apology("must provide username", 403)
+            flash("Please provide a username", "danger")
 
         # Ensure password was submitted
         elif not request.form.get("password"):
-            return apology("must provide password", 403)
+            flash("Please enter your password", "danger")
 
         #Checking for correct username, password, logging user in
         user = User.query.filter_by(username=request.form.get("username")).first()
@@ -115,7 +105,6 @@ def login():
     else:
         return render_template("login.html")
 
-
 @app.route("/logout")
 def logout():
     """Log user out"""
@@ -123,21 +112,6 @@ def logout():
     session.clear()
     # Redirect user to login form
     return redirect("/")
-
-
-@app.route('/name', methods=['GET', 'POST'])
-@login_required
-def name():
-	name = None
-	form = NamerForm()
-	# Validate Form
-	if form.validate_on_submit():
-		name = form.name.data
-		form.name.data = ''
-		
-	return render_template("name.html", 
-		name = name,
-		form = form)
 
 @app.route("/play", methods=["GET", "POST"])
 @login_required
@@ -149,14 +123,13 @@ def play():
 
         if action == "shuffle":
             # once player pushes the button, generate deck and shuffle it
-            ## For now this is way too long of a list, for testing we dont need the entire deck of 52
-            # values = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A']
-            # suits = ['H', 'S', 'C', 'D']
-            # deck = [value + suit for suit in suits for value in values]
-            # random.shuffle(deck)
-            ## For now lets use only 2 values King, Ace and 2 colors Hearts, Spades
-            values = ['K', 'A']
-            suits = ['H', 'S']
+            values = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A']
+            suits = ['H', 'S', 'C', 'D']
+            deck = [value + suit for suit in suits for value in values]
+            random.shuffle(deck)
+            ## TESTING FEEATURE that uses only 2 values - King, Ace and 2 colors - Hearts, Spades
+           # values = ['K', 'A']
+           # suits = ['H', 'S']
             deck = [value + suit for suit in suits for value in values]
             random.shuffle(deck)
             session["deck"] = deck
@@ -189,7 +162,7 @@ def play():
             db.session.add(game)
             db.session.commit()
 
-            message = "WELL DONE" if deck == submitted_cards else "WRONG"
+            message = "WELL DONE" if deck == submitted_cards else "Incorrect"
             flash(
                 f"{message} — Accuracy: {round(accuracy, 2)}%, "
                 f"Correct: {correct_count}/{len(deck) if deck else 0}."
@@ -212,8 +185,11 @@ def register():
     """Register user"""
     if request.method == "POST":
         if not request.form.get("username"):
-            return apology("must provide a username")
+            return apology("Please fill out your username")
         
+        if not request.form.get("email"):
+            return apology("Please fill out your e-mail")
+
         if not request.form.get("password"):
             return apology("must provide a password")
         
@@ -237,7 +213,7 @@ def register():
         db.session.add(user)
         db.session.commit()
         session["user_id"] = user.id
-        flash("You did it!")
+        flash("Registration successful!", 'primary')
 
 
 

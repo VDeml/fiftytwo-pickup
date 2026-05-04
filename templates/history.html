@@ -6,21 +6,21 @@
 
 {% block main %}
     <h3> Hello, {{ user.username }} here are your past results</h3>
-        <table>
-            <thead>
+        <table class="table table-bordered table-responsive">
+            <thead class="table-light">
                 <tr>
-                    <th>Attempt number</th>
-                    <th>Shuffled deck</th>
-                    <th>Order recorded</th>
-                    <th>Completed in (seconds)</th>
-                    <th>Date of attempt</th>
-                    <th>Accuracy</th>
+                    <th scope="col">Attempt number</th>
+                    <th scope="col">Shuffled deck</th>
+                    <th scope="col">Order recorded</th>
+                    <th scope="col">Completed in (seconds)</th>
+                    <th scope="col">Date of attempt</th>
+                    <th scope="col">Accuracy</th>
                 </tr>
             </thead>
             <tbody>
                 {% for attempt in attempts %}
                 <tr>
-                    <td>{{ attempt.id }}</td>
+                    <th>{{ loop.index }}</th>
                     <td>{{ attempt.deck_order | fromjson }}</td>
                     <td>{{ attempt.recall_order | fromjson }}</td>
                     <td>{{ "%.2f"|format(attempt.duration_seconds) }}</td>
