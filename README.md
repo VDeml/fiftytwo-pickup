@@ -23,21 +23,21 @@ A web-based application for practicing memory disciplines through the classic ca
 
 ## Features
 
-- 🎴 Full 52-card deck shuffling and memorization
-- 👤 User registration and authentication
-- 📊 Attempt history tracking with accuracy metrics
-- ⏱️ Time tracking for each attempt
-- 📈 Progress tracking across multiple attempts
-- 🔐 Secure password hashing with Werkzeug
-- 💾 SQLite database for persistent storage
+Full 52-card deck shuffling and memorization
+User registration and authentication
+Attempt history tracking with accuracy metrics
+Time tracking for each attempt
+Progress tracking across multiple attempts
+Secure password hashing with Werkzeug
+SQLite database for persistent storage
 
 ## Technology Stack
 
-- **Backend**: Python with Flask web framework
-- **Database**: SQLite with SQLAlchemy ORM
-- **Frontend**: HTML/Jinja2 templates with JavaScript
-- **Authentication**: Flask session management with werkzeug password hashing
-- **Security**: Password hashing (scrypt method)
+**Backend**: Python with Flask web framework
+**Database**: SQLite with SQLAlchemy ORM
+**Frontend**: HTML/Jinja2 templates with JavaScript
+**Authentication**: Flask session management with werkzeug password hashing
+**Security**: Password hashing (scrypt method)
 
 ## Installation
 
@@ -86,22 +86,6 @@ FLASK_APP=app.py
 FLASK_ENV=development
 ```
 
-## Project Structure
-
-```
-fiftytwo-pickup/
-├── app.py              # Main Flask application
-├── helpers.py          # Utility functions and decorators
-├── init_db.py          # Database initialization script
-├── requirements.txt    # Python dependencies
-├── .flaskenv          # Flask configuration
-├── .gitignore         # Git ignore rules
-├── static/            # Static files (CSS, JavaScript, images)
-└── templates/         # HTML templates
-```
-
-## Usage
-
 ### Registration
 
 1. Navigate to the application home page
@@ -143,14 +127,10 @@ fiftytwo-pickup/
 
 ## Security Notes
 
-⚠️ **Important**: The current implementation stores the Flask SECRET_KEY in plain text in `app.py`. For production deployment:
+**Important**: The current implementation stores the Flask SECRET_KEY in plain text in `app.py`. For production deployment:
 - Store the SECRET_KEY in an environment variable
 - Use a strong, randomly generated key
 - Never commit sensitive keys to version control
-
-## Contributing
-
-Contributions are welcome! Feel free to submit issues or pull requests to help improve the application.
 
 ## License
 
@@ -159,8 +139,7 @@ This project is unlicensed. See the repository for more details.
 ## Future Enhancements
 
 Potential features for future development:
-- Multiple card system variations
-- Advanced memorization techniques (Major System, Dominic System, etc.)
+- Visual improvements
 - Leaderboards and competitions
 - Statistics and analytics dashboard
 - Mobile app version
@@ -182,4 +161,4 @@ For issues, questions, or suggestions, please open a GitHub issue on the reposit
 
 ---
 
-**Happy memorizing!** 🧠
+**Have fun!** 
